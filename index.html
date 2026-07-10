@@ -537,6 +537,14 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
         <span class="breadcrumb-cur" id="pageTitle">Dashboard</span>
       </div>
       <div class="top-bar-right">
+        <div style="display:flex;align-items:center;gap:6px" title="Academic term — affects Dashboard, Analytics, Risk Predict, Leaderboard and Classes">
+          <label style="font-size:11px;font-weight:600;color:var(--txt3);white-space:nowrap">Term:</label>
+          <select id="globalTermSelector" style="padding:4px 8px;background:var(--bg-sec);border:1px solid var(--border);border-radius:var(--r-md);color:var(--txt);font-size:11.5px;font-weight:500">
+            <option value="1">Term 1</option>
+            <option value="2">Term 2</option>
+            <option value="3">Term 3</option>
+          </select>
+        </div>
         <div class="conn-indicator" id="connIndicator" title="Database connection status">
           <div class="conn-dot" id="connDot"></div>
           <span id="conn-label">Connecting…</span>
@@ -1279,7 +1287,8 @@ function goPage(pg) {
   if (window.innerWidth <= 768) $i('sidebar').classList.remove('open');
   ({dashboard:renderDashboard,classes:renderClasses,analytics:renderAnalytics,predict:renderPredict,
     compete:renderCompete,groups:renderGroups,reports:populateRptClasses,planner:renderPlanner,
-    timetable:renderTimetable,settings:loadSettings,help:renderHelp}[pg]||(() => {}))();
+    timetable:renderTimetable,settings:loadSettings,help:renderHelp,
+    backup:()=>{}}[pg]||(() => {}))(); // backup page is static (its cards have their own click listeners), so no render step is needed
 }
 document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => goPage(n.dataset.page)));
 $i('menuBtn').addEventListener('click', () => $i('sidebar').classList.toggle('open'));
@@ -1415,7 +1424,7 @@ function clearSession() {
   APP.classes=[]; APP.allStudents=[]; APP.dispStudents=[];
 }
 function showLogin() { $i('login-page').style.display='flex'; $i('app-shell').style.display='none'; }
-function showApp()  { $i('login-page').style.display='none'; $i('app-shell').style.display='flex'; goPage('dashboard'); }
+function showApp()  { $i('login-page').style.display='none'; $i('app-shell').style.display='flex'; setGlobalTerm(APP.currentTerm); goPage('dashboard'); }
 
 function switchTab(tab) {
   document.querySelectorAll('.login-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -1565,13 +1574,21 @@ async function loadStudentsForTerm(classId, term) {
   } catch { return []; }
 }
 
-// ─── TERM SELECTOR ───
+// ─── TERM SELECTOR (kept in sync between the top-bar global selector and the Classes-page selector) ───
+function setGlobalTerm(term) {
+  APP.currentTerm = term;
+  localStorage.setItem('sc_currentTerm', term);
+  const ts = $i('termSelector'), gts = $i('globalTermSelector');
+  if (ts) ts.value = term;
+  if (gts) gts.value = term;
+}
 $i('termSelector')?.addEventListener('change', function() {
-  APP.currentTerm = parseInt(this.value);
-  localStorage.setItem('sc_currentTerm', APP.currentTerm);
-  if (APP.currentClassId) {
-    loadClassData(APP.currentClassId);
-  }
+  setGlobalTerm(parseInt(this.value));
+  if (APP.currentClassId) loadClassData(APP.currentClassId);
+});
+$i('globalTermSelector')?.addEventListener('change', function() {
+  setGlobalTerm(parseInt(this.value));
+  goPage(APP.page);
 });
 
 // ─── RENDER CLASSES ───
@@ -2338,11 +2355,11 @@ $i('runPredBtn').addEventListener('click',async()=>{
   const classId=$i('pred-class').value;
   if (!classId) { toast('Select a class first','warn'); return; }
   const results=$i('pred-results');
-  results.innerHTML='<div style="color:var(--txt3);padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Analysing performance data for Term ${APP.currentTerm}…</div>';
+  results.innerHTML=`<div style="color:var(--txt3);padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Analysing performance data for Term ${APP.currentTerm}…</div>`;
   try {
     const term = APP.currentTerm;
     const [stus,cols]=await Promise.all([sbFetch(`students?class_id=eq.${classId}`),loadColsFromDB(classId, term)]);
-    if (!stus||!stus.length) { results.innerHTML='<div class="empty"><i class="fas fa-users"></i><p>No students in this class for Term ${term}</p></div>'; return; }
+    if (!stus||!stus.length) { results.innerHTML=`<div class="empty"><i class="fas fa-users"></i><p>No students in this class for Term ${term}</p></div>`; return; }
     const withRisk=stus.map(s=>{
       const avg=calcAvg(s,cols)||0;
       const assessments=cols.map(c=>s.scores?.[c.column_name]!=null?(s.scores[c.column_name]/c.max_score*100):null).filter(v=>v!=null);
@@ -2395,7 +2412,7 @@ async function renderCompete() {
 async function buildLeaderboard(classId) {
   const lb=$i('leaderboard-list');
   const term = APP.currentTerm;
-  lb.innerHTML='<div style="padding:18px;text-align:center;color:var(--txt3)"><i class="fas fa-spinner fa-spin"></i> Loading Term ${term} data…</div>';
+  lb.innerHTML=`<div style="padding:18px;text-align:center;color:var(--txt3)"><i class="fas fa-spinner fa-spin"></i> Loading Term ${term} data…</div>`;
   try {
     let allStus=[];
     const classes=classId?APP.classes.filter(c=>c.id===classId):APP.classes;
@@ -2403,7 +2420,7 @@ async function buildLeaderboard(classId) {
       const [stus,cols]=await Promise.all([sbFetch(`students?class_id=eq.${cls.id}`),loadColsFromDB(cls.id, term)]);
       if (stus) allStus.push(...stus.map(st=>({...st,_className:cls.class_name,_cols:cols})));
     }
-    if (!allStus.length) { lb.innerHTML='<div class="empty"><i class="fas fa-trophy"></i><p>No students to rank yet for Term ${term}</p></div>'; return; }
+    if (!allStus.length) { lb.innerHTML=`<div class="empty"><i class="fas fa-trophy"></i><p>No students to rank yet for Term ${term}</p></div>`; return; }
     const ranked=allStus.map(s=>({...s,_avg:calcAvg(s,s._cols)||0})).sort((a,b)=>b._avg-a._avg).slice(0,30);
     const medals=['🥇','🥈','🥉'];
     lb.innerHTML=ranked.map((s,i)=>{
@@ -2694,6 +2711,7 @@ async function populateRptClasses() {
     .map(c => `<option value="${c.id}">${esc(c.class_name)}</option>`)
     .join('');
   $i('rpt-class').innerHTML = options || '<option value="">No classes found</option>';
+  $i('rpt-term').value = APP.currentTerm;
 }
 
 $i('genRptBtn').addEventListener('click',async()=>{
