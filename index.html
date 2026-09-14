@@ -28,6 +28,20 @@
 }
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.6;overflow-x:hidden}
 a{text-decoration:none;color:inherit}
+/* AMBIENT BACKGROUND — premium mesh + grid, sits behind everything */
+.bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-mesh::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:26px 26px;mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 40%,transparent 100%)}
+[data-theme="light"] .bg-mesh::before{background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px)}
+.bg-mesh .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;will-change:transform}
+.bg-mesh .orb1{width:520px;height:520px;top:-160px;left:-120px;background:radial-gradient(circle,var(--acc) 0%,transparent 70%);animation:orbFloat1 26s ease-in-out infinite}
+.bg-mesh .orb2{width:460px;height:460px;bottom:-140px;right:-100px;background:radial-gradient(circle,#8B5CF6 0%,transparent 70%);opacity:.35;animation:orbFloat2 32s ease-in-out infinite}
+.bg-mesh .orb3{width:380px;height:380px;top:40%;left:55%;background:radial-gradient(circle,#3B82F6 0%,transparent 70%);opacity:.18;animation:orbFloat3 38s ease-in-out infinite}
+[data-theme="light"] .bg-mesh .orb{opacity:.16}
+@keyframes orbFloat1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,50px) scale(1.12)}}
+@keyframes orbFloat2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,-40px) scale(1.08)}}
+@keyframes orbFloat3{0%,100%{transform:translate(-30px,20px) scale(1)}50%{transform:translate(30px,-30px) scale(1.15)}}
+#login-page,#app-shell{position:relative;z-index:1}
+@media(prefers-reduced-motion:reduce){.bg-mesh .orb{animation:none}}
 input,select,button,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -219,8 +233,8 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 .toast.success{background:rgba(16,185,129,.88)}.toast.error{background:rgba(239,68,68,.88)}
 .toast.warn{background:rgba(245,158,11,.88);color:#000}.toast.info{background:rgba(59,130,246,.88)}
 /* LOGIN */
-#login-page{display:flex;min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 30%,rgba(255,102,0,.12) 0%,transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(139,92,246,.06) 0%,transparent 55%),var(--bg);padding:20px}
-.login-box{background:var(--bg-card);border:1px solid var(--border-hi);border-radius:var(--r-xl);padding:38px 34px;width:100%;max-width:440px;box-shadow:var(--shadow-lg);animation:slideUp .4s ease}
+#login-page{display:flex;min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 30%,rgba(255,102,0,.14) 0%,transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(139,92,246,.09) 0%,transparent 55%);padding:20px}
+.login-box{background:color-mix(in srgb,var(--bg-card) 88%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-hi);border-radius:var(--r-xl);padding:38px 34px;width:100%;max-width:440px;box-shadow:var(--shadow-lg),0 0 0 1px rgba(255,255,255,.02) inset;animation:slideUp .4s ease}
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 .login-logo{text-align:center;margin-bottom:26px}
 .login-logo-icon{width:54px;height:54px;border-radius:14px;margin:0 auto 13px;background:linear-gradient(135deg,var(--acc),#FF4400);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 8px 24px var(--acc-glow)}
@@ -307,6 +321,26 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 .setting-row:last-child{border-bottom:none}
 .setting-info .title{font-size:12.5px;font-weight:600;color:var(--txt)}
 .setting-info .desc{font-size:11px;color:var(--txt3)}
+/* SETTINGS — HEADER + HERO OVERVIEW */
+.settings-section-head{display:flex;align-items:center;gap:10px;margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.settings-section-head .sec-ico{width:30px;height:30px;border-radius:9px;background:var(--acc-sub);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.settings-section-head h3{font-size:13px;font-weight:700;color:var(--txt);margin:0;padding:0;border:none}
+.settings-section-head .sec-desc{font-size:11px;color:var(--txt3);margin-top:1px}
+.settings-hero{position:relative;background:linear-gradient(135deg,rgba(255,102,0,.14),rgba(139,92,246,.07) 55%,var(--bg-card) 100%);border:1px solid var(--border-hi);border-radius:var(--r-xl);padding:20px 22px;margin-bottom:13px;overflow:hidden}
+.settings-hero::after{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,var(--acc-glow),transparent 70%);pointer-events:none}
+.settings-hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;position:relative;z-index:1}
+.settings-hero-title{display:flex;align-items:center;gap:10px}
+.settings-hero-title .sec-ico{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--acc),#FF4400);color:#fff;box-shadow:0 4px 14px var(--acc-glow)}
+.settings-hero-title h3{font-size:14px;font-weight:800;color:var(--txt);letter-spacing:-.01em}
+.settings-hero-title .sec-desc{font-size:11px;color:var(--txt2)}
+.settings-hero-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:4px 10px;border-radius:20px;background:var(--bg-card);border:1px solid var(--border-hi);color:var(--txt2);white-space:nowrap}
+.mini-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1}
+.mini-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 14px;transition:var(--tr)}
+.mini-stat:hover{border-color:var(--border-hi);transform:translateY(-1px)}
+.mini-stat .ms-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--txt3);display:flex;align-items:center;gap:5px}
+.mini-stat .ms-val{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--txt);margin-top:6px;line-height:1}
+.mini-stat .ms-sub{font-size:10.5px;color:var(--txt3);margin-top:4px}
+@media(max-width:768px){.mini-stat-grid{grid-template-columns:1fr 1fr}}
 .toggle{position:relative;width:40px;height:22px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
 .toggle-slider{position:absolute;inset:0;cursor:pointer;background:var(--border-hi);border-radius:22px;transition:.25s}
@@ -386,7 +420,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
   .conn-indicator span{display:none}
 }
 @media print{
-  .sidebar,.top-bar,.toolbar,.btn,.btn-sec,.tool-btn,#toast-area,.modal,.tbl-top,.pagination,.page:not(#page-reports),#report-options-bar,.offline-banner{display:none!important}
+  .sidebar,.top-bar,.toolbar,.btn,.btn-sec,.tool-btn,#toast-area,.modal,.tbl-top,.pagination,.page:not(#page-reports),#report-options-bar,.offline-banner,.bg-mesh{display:none!important}
   #page-reports{padding:0!important;display:block!important}
   #report-preview{display:block!important;margin:0;border-radius:0;box-shadow:none}
   body{background:#fff}
@@ -395,6 +429,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 </style>
 </head>
 <body>
+<div class="bg-mesh" aria-hidden="true"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
 
 <!-- OFFLINE BANNER -->
 <div class="offline-banner" id="offlineBanner">
@@ -777,15 +812,36 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 
     <!-- SETTINGS -->
     <div class="page hidden" id="page-settings">
+
+      <!-- TEACHING OVERVIEW HERO -->
+      <div class="settings-hero">
+        <div class="settings-hero-top">
+          <div class="settings-hero-title">
+            <div class="sec-ico"><i class="fas fa-chart-line"></i></div>
+            <div>
+              <h3>Teaching Overview</h3>
+              <div class="sec-desc">Live snapshot across all your classes — Term <span id="set-ov-term">1</span></div>
+            </div>
+          </div>
+          <div class="settings-hero-badge" id="set-ov-badge"><i class="fas fa-circle-notch fa-spin"></i> Calculating…</div>
+        </div>
+        <div class="mini-stat-grid">
+          <div class="mini-stat"><div class="ms-label"><i class="fas fa-chalkboard"></i> Classes</div><div class="ms-val" id="set-ov-classes">—</div><div class="ms-sub">active this term</div></div>
+          <div class="mini-stat"><div class="ms-label"><i class="fas fa-user-graduate"></i> Students</div><div class="ms-val" id="set-ov-students">—</div><div class="ms-sub">across all classes</div></div>
+          <div class="mini-stat"><div class="ms-label"><i class="fas fa-gauge-high"></i> Teacher Average</div><div class="ms-val" id="set-ov-avg">—</div><div class="ms-sub">mean of class averages</div></div>
+          <div class="mini-stat"><div class="ms-label"><i class="fas fa-trophy"></i> Top Class</div><div class="ms-val" id="set-ov-top" style="font-size:15px">—</div><div class="ms-sub" id="set-ov-top-sub">—</div></div>
+        </div>
+      </div>
+
       <div class="settings-section">
-        <h3>Appearance</h3>
+        <div class="settings-section-head"><div class="sec-ico"><i class="fas fa-moon"></i></div><div><h3>Appearance</h3><div class="sec-desc">Personalize how SmartClass looks for you</div></div></div>
         <div class="setting-row">
           <div class="setting-info"><div class="title">Dark Mode</div><div class="desc">Use dark theme throughout the app</div></div>
           <label class="toggle"><input type="checkbox" id="darkToggle" checked><span class="toggle-slider"></span></label>
         </div>
       </div>
       <div class="settings-section">
-        <h3>Profile & School Information</h3>
+        <div class="settings-section-head"><div class="sec-ico"><i class="fas fa-id-badge"></i></div><div><h3>Profile & School Information</h3><div class="sec-desc">Appears on every generated report and letterhead</div></div></div>
         <div class="form-row">
           <div class="fg"><label>Full Name</label><input type="text" id="set-name" placeholder="Your full name"></div>
           <div class="fg"><label>Email</label><input type="text" id="set-email" disabled style="opacity:.5"></div>
@@ -793,6 +849,23 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
         <div class="form-row">
           <div class="fg"><label>School Name</label><input type="text" id="set-school" placeholder="School name"></div>
           <div class="fg"><label>Subject Taught</label><input type="text" id="set-subject" placeholder="Subject"></div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Province</label>
+            <select id="set-province">
+              <option value="">Select province…</option>
+              <option value="Kigali City">Kigali City</option>
+              <option value="Northern Province">Northern Province</option>
+              <option value="Southern Province">Southern Province</option>
+              <option value="Eastern Province">Eastern Province</option>
+              <option value="Western Province">Western Province</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>District</label>
+            <select id="set-district"><option value="">Select province first…</option></select>
+          </div>
         </div>
         <button class="btn" id="saveProfileBtn"><i class="fas fa-check"></i> Save Changes</button>
       </div>
@@ -1139,8 +1212,28 @@ const APP = {
   theme: localStorage.getItem('sc_theme') || 'dark',
   chartInstances: {},
   currentTerm: parseInt(localStorage.getItem('sc_currentTerm')) || 1,
-  schoolName: ''
+  schoolName: '', province: '', district: ''
 };
+
+/* ═══════════════════════════════════════════════════════
+   RWANDA ADMINISTRATIVE LOCATIONS (Province → Districts)
+═══════════════════════════════════════════════════════ */
+const RWANDA_LOCATIONS = {
+  'Kigali City': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
+  'Northern Province': ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'],
+  'Southern Province': ['Gisagara', 'Huye', 'Kamonyi', 'Muhanga', 'Nyamagabe', 'Nyanza', 'Nyaruguru', 'Ruhango'],
+  'Eastern Province': ['Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana'],
+  'Western Province': ['Karongi', 'Ngororero', 'Nyabihu', 'Nyamasheke', 'Rubavu', 'Rusizi', 'Rutsiro']
+};
+function populateDistricts(province, selected) {
+  const sel = $i('set-district');
+  if (!sel) return;
+  const districts = RWANDA_LOCATIONS[province] || [];
+  sel.innerHTML = districts.length
+    ? '<option value="">Select district…</option>' + districts.map(d => `<option value="${d}"${d===selected?' selected':''}>${d}</option>`).join('')
+    : '<option value="">Select province first…</option>';
+  sel.disabled = !districts.length;
+}
 
 /* ═══════════════════════════════════════════════════════
    UTILITIES
@@ -1356,6 +1449,10 @@ async function initTeacher(email, userId) {
         APP.schoolName = us[0].school_name || teacherRow.school_name || '';
         APP.teacherData.school_name = APP.schoolName;
         if (us[0].school_name) APP.teacherData.school_name = us[0].school_name;
+        APP.province = us[0].province || teacherRow.province || '';
+        APP.district = us[0].district || teacherRow.district || '';
+        if (APP.province) APP.teacherData.province = APP.province;
+        if (APP.district) APP.teacherData.district = APP.district;
       }
     } catch {}
 
@@ -1460,9 +1557,12 @@ $i('logoutBtn').addEventListener('click', ()=>{ clearSession(); showLogin(); });
       // Load school name from user_settings
       try {
         const us = await sbFetch(`user_settings?teacher_id=eq.${APP.teacherId}&limit=1`);
-        if (us && us.length && us[0].school_name) {
-          APP.schoolName = us[0].school_name;
-          APP.teacherData.school_name = us[0].school_name;
+        if (us && us.length) {
+          if (us[0].school_name) { APP.schoolName = us[0].school_name; APP.teacherData.school_name = us[0].school_name; }
+          APP.province = us[0].province || teacherRow.province || '';
+          APP.district = us[0].district || teacherRow.district || '';
+          if (APP.province) APP.teacherData.province = APP.province;
+          if (APP.district) APP.teacherData.district = APP.district;
         }
       } catch {}
       updateSbProfile(teacherRow.full_name || tname, email);
@@ -2730,11 +2830,12 @@ $i('genRptBtn').addEventListener('click',async()=>{
   
   setBtn('genRptBtn', true, '<i class="fas fa-spinner fa-spin"></i> Generating…');
   try {
-    const [stus, cols] = await Promise.all([
+    const [stus, cols, teacherOverview] = await Promise.all([
       sbFetch(`students?class_id=eq.${classId}&order=full_name.asc`),
-      loadColsFromDB(classId, term)
+      loadColsFromDB(classId, term),
+      computeTeacherOverallAverage(term).catch(() => ({ overall: null, totalStu: 0, best: null, classCount: null }))
     ]);
-    generateReport(cls, stus||[], cols, term, year);
+    generateReport(cls, stus||[], cols, term, year, teacherOverview);
     try {
       await sbFetch('reports', {
         method: 'POST',
@@ -2761,16 +2862,32 @@ $i('genRptBtn').addEventListener('click',async()=>{
   }
 });
 
-function generateReport(cls, students, cols, term, year) {
+function generateReport(cls, students, cols, term, year, teacherOverview) {
   const preview = $i('report-preview');
   const termLabel = term === 1 ? 'I' : term === 2 ? 'II' : 'III';
   
   // ─── SCHOOL NAME FROM SETTINGS ───
   const schoolName = APP.schoolName || APP.teacherData?.school_name || 'G.S APAPEC MURAMBI';
+
+  // ─── PROVINCE & DISTRICT FROM SETTINGS ───
+  const province = (APP.teacherData?.province || APP.province || 'Western Province').toUpperCase();
+  const district = (APP.teacherData?.district || APP.district || 'Rubavu');
+  const districtLabel = district.toUpperCase() + ' DISTRICT';
+  const districtShort = district.toUpperCase();
   
-  // ─── TEACHER NAME & SUBJECT ───
+  // ─── TEACHER NAME, SUBJECT & ROLE ───
   const teacherName = APP.teacherData?.full_name || 'CLASS TEACHER';
   const subject = APP.teacherData?.subject || '';
+  const roleLabel = subject ? `${subject} Teacher` : 'Class Teacher';
+
+  // ─── TEACHER'S OVERALL AVERAGE (across all classes, this term) ───
+  const teacherOverallAvg = teacherOverview?.overall ?? null;
+  const teacherOverallClasses = teacherOverview?.classCount ?? null;
+
+  // ─── GENERATION DATE & TIME (for footer) ───
+  const genNow = new Date();
+  const genDateStr = genNow.toLocaleDateString('en-RW', { day: '2-digit', month: 'long', year: 'numeric' });
+  const genTimeStr = genNow.toLocaleTimeString('en-RW', { hour: '2-digit', minute: '2-digit' });
 
   const sorted = [...students].sort((a,b) => a.full_name.localeCompare(b.full_name));
   const avgs = sorted.map(s => calcAvg(s, cols));
@@ -2780,6 +2897,12 @@ function generateReport(cls, students, cols, term, year) {
 
   // ─── TEACHER AVERAGE DATA ───
   const avgDenom = getTeacherAvgDenominator(cls, term);
+  const teacherAvgNumerators = sorted
+    .map(s => getTeacherAvgNumerator(s, term))
+    .filter(v => v != null);
+  const teacherAvgClassAvg = teacherAvgNumerators.length
+    ? teacherAvgNumerators.reduce((a, b) => a + b, 0) / teacherAvgNumerators.length
+    : null;
 
   // Column header: each assessment gets Score + % sub-columns
   const colHeaders = cols.map(c => `<th colspan="2" style="background:#dde">${esc(c.column_name)}<br><span style="font-weight:400;font-size:8.5px">Full Marks: ${c.max_score}</span></th>`).join('');
@@ -2840,19 +2963,19 @@ function generateReport(cls, students, cols, term, year) {
         <td style="width:33%;vertical-align:top;font-size:10px;line-height:1.7">
           <strong>REPUBLIC OF RWANDA</strong><br>
           MINISTRY OF EDUCATION<br>
-          WESTERN PROVINCE<br>
-          RUBAVU DISTRICT
+          ${esc(province)}<br>
+          ${esc(districtLabel)}
         </td>
         <td style="width:34%;text-align:center;vertical-align:middle">
           <div style="width:72px;height:72px;border-radius:50%;border:2.5px solid #003399;display:inline-flex;align-items:center;justify-content:center;flex-direction:column;padding:5px">
             <div style="font-size:7px;font-weight:800;color:#003399;text-align:center;line-height:1.4">${esc(schoolName)}</div>
-            <div style="font-size:6px;color:#003399;margin-top:1px">RUBAVU</div>
+            <div style="font-size:6px;color:#003399;margin-top:1px">${esc(districtShort)}</div>
           </div>
         </td>
         <td style="width:33%;text-align:right;vertical-align:top;font-size:10px;line-height:1.7">
           <strong>${esc(schoolName)}</strong><br>
           P.O BOX 301 MURAMBI<br>
-          RUBAVU DISTRICT<br>
+          ${esc(districtLabel)}<br>
           TEL: 0788000000
         </td>
       </tr>
@@ -2876,6 +2999,10 @@ function generateReport(cls, students, cols, term, year) {
         <td style="border:1px solid #999;padding:4px 8px"><strong>PASSED:</strong> ${totalPass} (${students.length > 0 ? Math.round(totalPass / students.length * 100) : 0}%)</td>
         <td style="border:1px solid #999;padding:4px 8px"><strong>CLASS AVERAGE:</strong> <span style="font-weight:700;color:${scoreColorHex(classAvg)}">${classAvg != null ? classAvg.toFixed(1) + '%' : '—'}</span></td>
         <td style="border:1px solid #999;padding:4px 8px"><strong>TEACHER:</strong> ${esc(teacherName)}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #999;padding:4px 8px" colspan="2"><strong>TEACHER'S OVERALL AVERAGE:</strong> <span style="font-weight:700;color:${scoreColorHex(teacherOverallAvg)}">${teacherOverallAvg != null ? teacherOverallAvg.toFixed(1) + '%' : '—'}</span> <span style="font-size:8.5px;color:#666">(across ${teacherOverallClasses ?? 0} class${teacherOverallClasses === 1 ? '' : 'es'}, Term ${termLabel})</span></td>
+        <td style="border:1px solid #999;padding:4px 8px"><strong>ROLE:</strong> ${esc(roleLabel)}</td>
       </tr>
     </table>
 
@@ -2902,7 +3029,7 @@ function generateReport(cls, students, cols, term, year) {
           ${totalsColCells}
           <td style="text-align:center"></td>
           <td style="text-align:center;font-weight:700;color:${scoreColorHex(classAvg)}">${classAvg != null ? classAvg.toFixed(1) + '%' : '—'}</td>
-          <td style="text-align:center;color:#FF6600">${avgDenom ? `— / ${avgDenom}` : '—'}</td>
+          <td style="text-align:center;font-weight:700;color:#FF6600">${avgDenom && teacherAvgClassAvg != null ? `${teacherAvgClassAvg.toFixed(1)} / ${avgDenom}` : '—'}</td>
           <td style="text-align:center">${classAvg != null ? gradeFromPct(classAvg).grade : '—'}</td>
           <td></td>
         </tr>
@@ -2932,7 +3059,7 @@ function generateReport(cls, students, cols, term, year) {
         <div>CLASS TEACHER</div>
         <div style="margin-top:4px">DATE: ${new Date().toLocaleDateString('en-RW', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
         <div style="width:56px;height:56px;border-radius:50%;border:2.5px solid #003399;display:flex;align-items:center;justify-content:center;margin:8px auto 0;flex-direction:column;padding:3px">
-          <div style="font-size:6px;font-weight:700;color:#003399;text-align:center;line-height:1.3">${esc(schoolName)}<br>RUBAVU</div>
+          <div style="font-size:6px;font-weight:700;color:#003399;text-align:center;line-height:1.3">${esc(schoolName)}<br>${esc(districtShort)}</div>
         </div>
       </div>
     </div>
@@ -2941,8 +3068,14 @@ function generateReport(cls, students, cols, term, year) {
       <strong>GRADING SYSTEM:</strong> &nbsp;
       A [80 – 100%] &nbsp;|&nbsp; B [70 – 79%] &nbsp;|&nbsp; C [50 – 69%] &nbsp;|&nbsp; D [40 – 49%] &nbsp;|&nbsp; E [0 – 39%]
     </div>
-    <div style="margin-top:5px;text-align:center;font-size:9px;color:#555;border-top:1px solid #ddd;padding-top:5px">
-      ★ POWERED BY || BILLAN LABS COMPANY ★ &nbsp;—&nbsp; SMARTCLASS ANALYTICS &nbsp;—&nbsp; Generated: ${new Date().toLocaleString('en-RW')}
+    <div style="margin-top:5px;text-align:center;font-size:9.5px;color:#333;border-top:1px solid #ddd;padding-top:6px;font-weight:600">
+      Prepared by: ${esc(roleLabel)} ${esc(teacherName)}
+    </div>
+    <div style="margin-top:2px;text-align:center;font-size:9px;color:#555;padding-top:2px">
+      Date Generated: ${esc(genDateStr)} &nbsp;|&nbsp; Time: ${esc(genTimeStr)}
+    </div>
+    <div style="margin-top:4px;text-align:center;font-size:8.5px;color:#888;border-top:1px solid #eee;padding-top:4px">
+      ★ POWERED BY || BILLAN LABS COMPANY ★ &nbsp;—&nbsp; SMARTCLASS ANALYTICS
     </div>
   </div>`;
   preview.style.display = 'block';
@@ -3142,36 +3275,92 @@ function loadSettings() {
   $i('set-email').value = localStorage.getItem('sc_email') || '';
   $i('set-school').value = APP.teacherData?.school_name || APP.schoolName || '';
   $i('set-subject').value = APP.teacherData?.subject || '';
+  const province = APP.teacherData?.province || APP.province || '';
+  const district = APP.teacherData?.district || APP.district || '';
+  $i('set-province').value = province;
+  populateDistricts(province, district);
   $i('darkToggle').checked = APP.theme === 'dark';
+  renderSettingsOverview();
 }
+$i('set-province')?.addEventListener('change', e => populateDistricts(e.target.value, ''));
+
+async function computeTeacherOverallAverage(term) {
+  await loadClasses();
+  let totalStu = 0, best = null;
+  const classAvgs = [];
+  for (const cls of APP.classes) {
+    try {
+      const [stus, cols] = await Promise.all([sbFetch(`students?class_id=eq.${cls.id}`), loadColsFromDB(cls.id, term)]);
+      const s = stus || [];
+      const avgs = s.map(st => calcAvg(st, cols)).filter(v => v != null);
+      const avg = avgs.length ? avgs.reduce((a,b)=>a+b,0)/avgs.length : null;
+      totalStu += s.length;
+      if (avg != null) {
+        classAvgs.push(avg);
+        if (!best || avg > best.avg) best = { name: cls.class_name, avg };
+      }
+    } catch {}
+  }
+  const overall = classAvgs.length ? classAvgs.reduce((a,b)=>a+b,0)/classAvgs.length : null;
+  return { overall, totalStu, best, classCount: APP.classes.length };
+}
+
+async function renderSettingsOverview() {
+  const badge = $i('set-ov-badge');
+  if (badge) badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Calculating…';
+  $i('set-ov-term').textContent = APP.currentTerm;
+  try {
+    const { overall, totalStu, best, classCount } = await computeTeacherOverallAverage(APP.currentTerm);
+    $i('set-ov-classes').textContent = classCount;
+    $i('set-ov-students').textContent = totalStu;
+    const avgEl = $i('set-ov-avg');
+    avgEl.textContent = overall != null ? overall.toFixed(1) + '%' : '—';
+    avgEl.style.color = overall != null ? scoreColorFromPct(overall) : '';
+    $i('set-ov-top').textContent = best ? best.name : '—';
+    $i('set-ov-top-sub').textContent = best ? `${best.avg.toFixed(1)}% average` : 'No data yet';
+    if (badge) {
+      badge.innerHTML = classCount
+        ? `<i class="fas fa-check-circle" style="color:var(--green)"></i> Live · ${classCount} class${classCount===1?'':'es'}`
+        : '<i class="fas fa-info-circle"></i> No classes yet';
+    }
+  } catch (e) {
+    if (badge) badge.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:var(--yellow)"></i> Unable to load';
+  }
+}
+
 $i('saveProfileBtn').addEventListener('click', async () => {
   const name = $i('set-name').value.trim(), school = $i('set-school').value.trim(), subject = $i('set-subject').value.trim();
+  const province = $i('set-province').value, district = $i('set-district').value;
   localStorage.setItem('sc_tname', name);
-  APP.schoolName = school;
+  APP.schoolName = school; APP.province = province; APP.district = district;
   updateSbProfile(name, localStorage.getItem('sc_email') || '');
   setBtn('saveProfileBtn', true, 'Saving…');
+  let locationSaved = true;
   try {
-    await sbFetch(`teachers?id=eq.${APP.teacherId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ full_name: name, school_name: school, subject, updated_at: new Date().toISOString() })
-    });
+    const fullPayload = { full_name: name, school_name: school, subject, province, district, updated_at: new Date().toISOString() };
     try {
-      await sbFetch(`user_settings?teacher_id=eq.${APP.teacherId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ theme: APP.theme, school_name: school, updated_at: new Date().toISOString() })
-      });
+      await sbFetch(`teachers?id=eq.${APP.teacherId}`, { method: 'PATCH', body: JSON.stringify(fullPayload) });
+    } catch (e) {
+      // Province/District columns may not exist yet in an older database — retry with core fields only
+      locationSaved = false;
+      const { province: _p, district: _d, ...corePayload } = fullPayload;
+      await sbFetch(`teachers?id=eq.${APP.teacherId}`, { method: 'PATCH', body: JSON.stringify(corePayload) });
+    }
+    const usPayload = { theme: APP.theme, school_name: school, province, district, updated_at: new Date().toISOString() };
+    try {
+      await sbFetch(`user_settings?teacher_id=eq.${APP.teacherId}`, { method: 'PATCH', body: JSON.stringify(locationSaved ? usPayload : { theme: APP.theme, school_name: school, updated_at: new Date().toISOString() }) });
     } catch {
       try {
-        await sbFetch('user_settings', {
-          method: 'POST',
-          body: JSON.stringify({ teacher_id: APP.teacherId, theme: APP.theme, school_name: school })
-        });
+        await sbFetch('user_settings', { method: 'POST', body: JSON.stringify({ teacher_id: APP.teacherId, theme: APP.theme, school_name: school, ...(locationSaved ? { province, district } : {}) }) });
       } catch {}
     }
-    if (APP.teacherData) { APP.teacherData.full_name = name;
+    if (APP.teacherData) {
+      APP.teacherData.full_name = name;
       APP.teacherData.school_name = school;
-      APP.teacherData.subject = subject; }
-    toast('Profile saved', 'success');
+      APP.teacherData.subject = subject;
+      if (locationSaved) { APP.teacherData.province = province; APP.teacherData.district = district; }
+    }
+    toast(locationSaved ? 'Profile saved' : 'Profile saved — ask your admin to run the province/district database update (see docs)', locationSaved ? 'success' : 'warn', locationSaved ? 3500 : 7000);
   } catch (e) { toast('Error saving: ' + e.message, 'error'); } finally { setBtn('saveProfileBtn', false, '<i class="fas fa-check"></i> Save Changes'); }
 });
 
