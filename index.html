@@ -2911,11 +2911,9 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
   // Student rows with Teacher Avg
   const bodyRows = sorted.map((s,i) => {
     const sc = s.scores || {};
-    let totalRaw = 0, totalPossible = 0;
     const colCells = cols.map(col => {
       const raw = sc[col.column_name];
       const pct = raw != null ? (raw / col.max_score * 100) : null;
-      if (raw != null) { totalRaw += raw; totalPossible += col.max_score; }
       return `<td style="text-align:center">${raw != null ? raw : ''}</td><td style="text-align:center">${pct != null ? pct.toFixed(1) + '%' : ''}</td>`;
     }).join('');
     const avg = avgs[i];
@@ -2933,7 +2931,6 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
       <td style="text-align:center;font-weight:600">${i+1}</td>
       <td style="text-align:left;font-weight:600;padding-left:6px">${esc(s.full_name)}${s.registration_number ? `<br><span style="font-size:8px;font-weight:400;color:#666">${esc(s.registration_number)}</span>` : ''}</td>
       ${colCells}
-      <td style="text-align:center;font-weight:700">${totalPossible > 0 ? totalRaw.toFixed(1) : '—'}</td>
       <td style="text-align:center;font-weight:700;color:${scoreColorHex(avg)}">${avg != null ? avg.toFixed(1) + '%' : '—'}</td>
       <td style="text-align:center;font-weight:700;color:#FF6600">${teacherAvgDisplay}</td>
       <td style="text-align:center;font-weight:700">${g.grade}</td>
@@ -2947,7 +2944,7 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
     return `<td style="text-align:center;font-weight:700;background:#f0f0f0">${avg != null ? avg.toFixed(1) : ''}</td><td style="background:#f0f0f0"></td>`;
   }).join('');
 
-  const totalColspan = 3 + cols.length * 2 + 1;
+  const totalColspan = 2 + cols.length * 2 + 4;
 
   function scoreColorHex(pct) {
     if (pct == null) return '#333';
@@ -3012,7 +3009,6 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
           <th rowspan="2" style="text-align:center;width:28px">#</th>
           <th rowspan="2" style="text-align:left;min-width:130px">STUDENT'S NAMES</th>
           ${colHeaders}
-          <th rowspan="2" style="background:#bbc">TOTAL<br>NUMBERS</th>
           <th rowspan="2" style="background:#bbc">%</th>
           <th rowspan="2" style="background:#bbc;min-width:70px">TEACHER<br>AVG</th>
           <th rowspan="2" style="background:#bbc">GRADE</th>
@@ -3027,7 +3023,6 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
         <tr style="background:#e8e8e8;font-weight:700">
           <td colspan="2" style="text-align:right;padding:5px 8px;font-weight:700">CLASS AVERAGE →</td>
           ${totalsColCells}
-          <td style="text-align:center"></td>
           <td style="text-align:center;font-weight:700;color:${scoreColorHex(classAvg)}">${classAvg != null ? classAvg.toFixed(1) + '%' : '—'}</td>
           <td style="text-align:center;font-weight:700;color:#FF6600">${avgDenom && teacherAvgClassAvg != null ? `${teacherAvgClassAvg.toFixed(1)} / ${avgDenom}` : '—'}</td>
           <td style="text-align:center">${classAvg != null ? gradeFromPct(classAvg).grade : '—'}</td>
@@ -3035,34 +3030,6 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
         </tr>
       </tfoot>
     </table>
-
-    <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:8px;margin-top:10px;border-top:1px solid #ccc;padding-top:8px">
-      <div>
-        <table style="width:100%;border-collapse:collapse;font-size:9.5px;border:1px solid #ccc">
-          <tr><td colspan="2" style="background:#eee;font-weight:700;padding:4px 6px;text-align:center;border:1px solid #ccc">BEHAVIOUR</td></tr>
-          <tr><td style="padding:3px 5px;border:1px solid #ddd"><strong>PUNCTUALITY:</strong></td><td style="padding:3px 5px;border:1px solid #ddd">GOOD</td></tr>
-          <tr><td style="padding:3px 5px;border:1px solid #ddd"><strong>DISCIPLINE:</strong></td><td style="padding:3px 5px;border:1px solid #ddd">GOOD</td></tr>
-          <tr><td style="padding:3px 5px;border:1px solid #ddd"><strong>DRESS CODE:</strong></td><td style="padding:3px 5px;border:1px solid #ddd">GOOD</td></tr>
-          <tr><td style="padding:3px 5px;border:1px solid #ddd"><strong>GENERAL CONDUCT:</strong></td><td style="padding:3px 5px;border:1px solid #ddd">GOOD</td></tr>
-        </table>
-      </div>
-      <div style="border:1px solid #ccc;padding:8px;font-size:9.5px">
-        <div style="font-weight:700;text-align:center;background:#eee;margin:-8px -8px 6px;padding:4px">REMARKS</div>
-        <p>Performance reviewed for Term ${termLabel}, ${esc(year)}.</p>
-        <p style="margin-top:4px">${totalPass === students.length ? 'Excellent performance by the whole class. Keep it up!' : totalPass > students.length / 2 ? 'Good performance. Students who are struggling are encouraged to seek extra support.' : 'Several students need immediate attention and extra tuition.'}</p>
-        <p style="margin-top:8px;font-weight:700">NEXT TERM BEGINS ON: _______________</p>
-      </div>
-      <div style="text-align:center;font-size:9.5px">
-        <div style="font-weight:700;text-align:center;background:#eee;border:1px solid #ccc;padding:4px;margin-bottom:6px">SIGNATURE</div>
-        <div style="border-bottom:1px solid #333;margin:22px 10px 5px"></div>
-        <div style="font-weight:700">${esc(teacherName)}</div>
-        <div>CLASS TEACHER</div>
-        <div style="margin-top:4px">DATE: ${new Date().toLocaleDateString('en-RW', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
-        <div style="width:56px;height:56px;border-radius:50%;border:2.5px solid #003399;display:flex;align-items:center;justify-content:center;margin:8px auto 0;flex-direction:column;padding:3px">
-          <div style="font-size:6px;font-weight:700;color:#003399;text-align:center;line-height:1.3">${esc(schoolName)}<br>${esc(districtShort)}</div>
-        </div>
-      </div>
-    </div>
 
     <div style="margin-top:8px;text-align:center;font-size:9.5px;border:1px solid #ccc;padding:5px;background:#f9f9f9">
       <strong>GRADING SYSTEM:</strong> &nbsp;
