@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SmartClass Analytics</title>
+<title>SmartClass Analytics — Teacher Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -287,6 +287,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 .risk-high{background:rgba(239,68,68,.12);color:var(--red)}
 .risk-med{background:rgba(245,158,11,.12);color:var(--yellow)}
 .risk-low{background:rgba(16,185,129,.12);color:var(--green)}
+.risk-none{background:rgba(148,163,184,.14);color:var(--txt3)}
 /* COMPETE */
 .leaderboard{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
 .lb-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);transition:var(--tr)}
@@ -727,7 +728,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
     <!-- PREDICT -->
     <div class="page hidden" id="page-predict">
       <div class="section-head">
-        <div><div class="section-title">Performance Risk Analysis</div><div class="section-sub">AI powered identification of at risk students</div></div>
+        <div><div class="section-title">Performance Risk Analysis</div><div class="section-sub">AI-powered identification of at-risk students</div></div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="pred-class" style="padding:7px 10px;background:var(--bg-sec);border:1px solid var(--border);border-radius:var(--r-md);color:var(--txt);font-size:12.5px"></select>
           <button class="btn" id="runPredBtn"><i class="fas fa-brain"></i> Analyse</button>
@@ -769,6 +770,10 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
           <div class="opt-grp"><label>Class</label><select id="rpt-class"></select></div>
           <div class="opt-grp"><label>Term</label><select id="rpt-term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3" selected>Term 3</option></select></div>
           <div class="opt-grp"><label>Academic Year</label><input type="text" id="rpt-year" value="2025-2026"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin:4px 0 13px">
+          <input type="checkbox" id="rpt-showTeacherAvg" checked style="width:15px;height:15px;cursor:pointer">
+          <label for="rpt-showTeacherAvg" style="font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none">Show "Teacher Avg" column on the report</label>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn" id="genRptBtn"><i class="fas fa-chart-bar"></i> Generate Report</button>
@@ -943,6 +948,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
     <div class="modal-head"><h3><i class="fas fa-clipboard-list"></i>Edit Marks — <span id="m-marksStuName"></span></h3><button class="modal-close" onclick="closeModal('m-editMarks')">&times;</button></div>
     <input type="hidden" id="m-marksStuId">
     <div id="m-marks-fields" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:12px"></div>
+    <div id="m-marks-error" style="padding:9px 13px;background:#3a1414;color:#ff9d9d;border:1px solid #7a2e2e;border-radius:var(--r-md);font-size:12px;margin-bottom:10px;display:none"></div>
     <div id="m-marks-preview" style="padding:10px 13px;background:var(--bg-sec);border-radius:var(--r-md);font-size:12.5px;color:var(--txt2);display:none;border:1px solid var(--border)">
       Average: <strong id="m-marks-avg" style="font-family:'JetBrains Mono',monospace">—</strong>
     </div>
@@ -1004,6 +1010,10 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
   <div class="modal-box">
     <div class="modal-head"><h3><i class="fas fa-table-columns"></i>Manage Assessment Columns</h3><button class="modal-close" onclick="closeModal('m-manageCol')">&times;</button></div>
     <div id="m-col-list" style="display:flex;flex-direction:column;gap:5px;max-height:320px;overflow-y:auto"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <input type="checkbox" id="m-showTeacherAvgCol" style="width:15px;height:15px;cursor:pointer">
+      <label for="m-showTeacherAvgCol" style="font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none;flex:1">Show "Teacher Avg" column (tables &amp; reports) for this term</label>
+    </div>
     <div class="modal-foot"><button class="btn-sec" style="flex:1" onclick="closeModal('m-manageCol')">Close</button></div>
   </div>
 </div>
@@ -1287,29 +1297,52 @@ function isValidName(str) {
 /* ═══════════════════════════════════════════════════════
    GRADE / SCORE HELPERS (TERM-AWARE)
 ═══════════════════════════════════════════════════════ */
+// Scores are stored in one flat JSON object per student, shared across every
+// term. Two different terms that happen to reuse the same assessment name
+// (e.g. both called "Test") would otherwise silently overwrite each other's
+// marks. scoreKey() namespaces every NEW score by the column's term so this
+// can never happen again. readScore() checks the namespaced key first and
+// falls back to the old plain key so scores saved before this fix keep
+// working — no bulk data migration needed, and nothing already saved is lost.
+function scoreKey(columnName, term) {
+  return `${columnName}::t${term}`;
+}
+function readScore(scores, columnName, term) {
+  if (!scores) return null;
+  const scoped = scores[scoreKey(columnName, term)];
+  if (scoped != null) return scoped;
+  const legacy = scores[columnName];
+  return legacy != null ? legacy : null;
+}
 function calcAvg(student, columns) {
   if (!columns || !columns.length) return null;
   const scores = student.scores || {};
-  const vals = columns.map(col => {
-    const raw = scores[col.column_name];
-    return raw != null ? (raw / col.max_score * 100) : null;
-  }).filter(v => v != null);
-  if (!vals.length) return null;
-  return vals.reduce((a,b) => a+b, 0) / vals.length;
+  let earned = 0, possible = 0;
+  columns.forEach(col => {
+    const raw = readScore(scores, col.column_name, col.term);
+    if (raw != null && col.max_score) { earned += raw; possible += col.max_score; }
+  });
+  if (possible === 0) return null;
+  return (earned / possible) * 100;
 }
 
 function getTermSuffix(term) {
   return term === 1 ? '_term1' : term === 2 ? '_term2' : '_term3';
 }
 
-function getTeacherAvgNumerator(student, term) {
-  const suffix = getTermSuffix(term);
-  return student['teacher_avg_numerator' + suffix] || null;
-}
-
 function getTeacherAvgDenominator(cls, term) {
   const suffix = getTermSuffix(term);
   return cls['teacher_avg_denominator' + suffix] || null;
+}
+
+// Whether the "Teacher Avg" column should be shown for this class/term.
+// Defaults to true (matches the existing behaviour) unless a teacher has
+// explicitly hidden it via Manage Columns.
+function getShowTeacherAvg(cls, term) {
+  if (!cls) return true;
+  const suffix = getTermSuffix(term);
+  const val = cls['show_teacher_avg' + suffix];
+  return val !== false;
 }
 
 function gradeFromPct(pct) {
@@ -1760,11 +1793,13 @@ async function loadClassData(classId) {
 // ─── BUILD TABLE HEAD WITH TEACHER AVG ───
 function buildTableHead() {
   const cols = APP.currentCols;
+  const cls = APP.classes.find(c => c.id === APP.currentClassId);
+  const showTeacherAvg = getShowTeacherAvg(cls, APP.currentTerm);
   let html = '<tr><th>#</th><th>Student Name</th>';
   cols.forEach(col => {
     html += `<th style="white-space:nowrap">${esc(col.column_name)}<br><span style="font-weight:400;font-size:9px;text-transform:none;letter-spacing:0;color:var(--txt3)">/ ${col.max_score}</span></th>`;
   });
-  html += '<th style="min-width:80px">Teacher Avg</th>';
+  if (showTeacherAvg) html += '<th style="min-width:80px">Teacher Avg</th>';
   html += '<th>Avg %</th><th>Grade</th><th>Actions</th></tr>';
   $i('stu-tbl-head').innerHTML = html;
 }
@@ -1782,11 +1817,12 @@ function renderStudents() {
   const cls = APP.classes.find(c => c.id === APP.currentClassId);
   const term = APP.currentTerm;
   const avgDenom = getTeacherAvgDenominator(cls, term);
+  const showTeacherAvg = getShowTeacherAvg(cls, term);
 
   tbody.innerHTML=page.map((s,idx)=>{
     const sc=s.scores||{};
     const scoreCells=cols.map(col=>{
-      const raw=sc[col.column_name];
+      const raw=readScore(sc,col.column_name,col.term);
       const pct=raw!=null?(raw/col.max_score*100):null;
       const col2=pct!=null?(pct>=80?'s-a':pct>=70?'s-b':pct>=50?'s-c':pct>=40?'s-d':'s-fail'):'s-none';
       return `<td><span class="score ${col2}">${raw!=null?`${raw}<small style="color:var(--txt3);font-size:9px"> /${col.max_score}</small>`:'<span style="color:var(--txt3)">—</span>'}</span></td>`;
@@ -1795,16 +1831,17 @@ function renderStudents() {
     const ini=(s.full_name||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
     let teacherAvgDisplay = '—';
-    const numerator = getTeacherAvgNumerator(s, term);
-    if (avgDenom && numerator != null) {
+    if (avgDenom && avg != null) {
+      const numerator = avg * (avgDenom / 100);
       teacherAvgDisplay = `${numerator.toFixed(1)} / ${avgDenom}`;
     }
+    const teacherAvgTd = showTeacherAvg ? `<td style="font-weight:600;color:var(--acc)">${teacherAvgDisplay}</td>` : '';
 
     return `<tr>
       <td style="color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:11px">${start+idx+1}</td>
       <td><div class="stu-cell"><div class="stu-av">${esc(ini)}</div><div><span style="font-weight:600;display:block">${esc(s.full_name)}</span>${s.registration_number?`<span style="font-size:10px;color:var(--txt3)">${esc(s.registration_number)}</span>`:''}</div></div></td>
       ${scoreCells}
-      <td style="font-weight:600;color:var(--acc)">${teacherAvgDisplay}</td>
+      ${teacherAvgTd}
       <td><strong class="score ${g.sCls}">${avg!=null?avg.toFixed(1)+'%':'—'}</strong></td>
       <td><span class="status-pill ${g.cls}">${g.label}</span></td>
       <td><div class="row-actions">
@@ -1936,24 +1973,16 @@ $i('saveAvgBtn').addEventListener('click', async () => {
   if (isNaN(X) || X <= 0) { toast('Enter a valid number greater than 0','warn'); return; }
   setBtn('saveAvgBtn', true, 'Applying...');
   try {
-    const students = APP.allStudents;
-    const cols = APP.currentCols;
     const term = APP.currentTerm;
     const suffix = getTermSuffix(term);
-    const updates = [];
-    for (const s of students) {
-      const Y = calcAvg(s, cols);
-      if (Y == null) continue;
-      const Z = Y * (X / 100);
-      const fieldName = 'teacher_avg_numerator' + suffix;
-      updates.push(sbFetch(`students?id=eq.${s.id}`, { method: 'PATCH', body: JSON.stringify({ [fieldName]: Z }) }));
-    }
+    // Only the conversion scale (denominator) needs to be stored — the numerator
+    // is now always derived live from each student's current, correctly-weighted
+    // average, so it never goes stale and never needs a per-student write.
     const denomField = 'teacher_avg_denominator' + suffix;
     await sbFetch(`classes?id=eq.${APP.currentClassId}`, { method: 'PATCH', body: JSON.stringify({ [denomField]: X }) });
-    await Promise.all(updates);
     closeModal('m-setAvg');
     await loadClassData(APP.currentClassId);
-    toast(`Teacher average set to /${X} for term ${term} (${students.length} students)`, 'success');
+    toast(`Teacher average scale set to /${X} for term ${term}`, 'success');
   } catch (e) {
     toast('Error: ' + e.message, 'error');
   } finally {
@@ -2013,6 +2042,7 @@ $i('saveEditStuBtn').addEventListener('click',async()=>{
 /* EDIT MARKS */
 window.openEditMarks = (sid, sname) => {
   $i('m-marksStuId').value=sid; $i('m-marksStuName').textContent=sname;
+  $i('m-marks-error').style.display='none';
   const stu=APP.allStudents.find(s=>s.id===sid);
   const scores=(stu&&stu.scores)||{};
   const fields=$i('m-marks-fields');
@@ -2024,8 +2054,8 @@ window.openEditMarks = (sid, sname) => {
       <div>
         <label style="display:block;font-size:10.5px;font-weight:700;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.07em">${esc(col.column_name)} <span style="color:var(--txt3);font-weight:400">/ ${col.max_score}</span></label>
         <input type="number" min="0" max="${col.max_score}" step="0.5"
-          value="${scores[col.column_name]!=null?scores[col.column_name]:''}"
-          placeholder="0–${col.max_score}" data-col="${escA(col.column_name)}" data-max="${col.max_score}"
+          value="${readScore(scores,col.column_name,col.term)!=null?readScore(scores,col.column_name,col.term):''}"
+          placeholder="0–${col.max_score}" data-col="${escA(col.column_name)}" data-max="${col.max_score}" data-term="${col.term}"
           style="width:100%;padding:9px 11px;background:var(--bg-sec);border:1px solid var(--border);border-radius:var(--r-md);color:var(--txt);font-size:14px;font-family:'JetBrains Mono',monospace;transition:var(--tr)"
           oninput="updateMarksPreview()" onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--border)'">
       </div>`).join('');
@@ -2033,12 +2063,39 @@ window.openEditMarks = (sid, sname) => {
   }
   openModal('m-editMarks');
 };
+// Shared validation for the marks-entry form. A truly empty field is left
+// alone (not an error — the student may just not have taken that assessment
+// yet). A value of 0 is a fully legitimate score and always passes through
+// normally — it is never treated as "not entered".
+function validateMarksInputs(inputs) {
+  const errors = [];
+  let earned = 0, possible = 0;
+  inputs.forEach(inp => {
+    inp.style.borderColor = 'var(--border)';
+    const raw = inp.value.trim();
+    if (raw === '') return;
+    const v = parseFloat(raw);
+    const mx = parseFloat(inp.dataset.max);
+    const label = inp.dataset.col;
+    if (isNaN(v)) { errors.push(`${label}: not a valid number`); inp.style.borderColor = '#CC3333'; return; }
+    if (v < 0) { errors.push(`${label}: score cannot be negative`); inp.style.borderColor = '#CC3333'; return; }
+    if (v > mx) { errors.push(`${label}: you entered ${v}, but this assessment is only out of ${mx} — the marks entered exceed the full marks for this test`); inp.style.borderColor = '#CC3333'; return; }
+    earned += v; possible += mx;
+  });
+  return { earned, possible, errors };
+}
 window.updateMarksPreview = () => {
-  const inputs=$i('m-marks-fields').querySelectorAll('input');
-  const vals=[];
-  inputs.forEach(inp=>{const v=parseFloat(inp.value),mx=parseFloat(inp.dataset.max||100);if(!isNaN(v))vals.push(v/mx*100);});
-  if (vals.length) {
-    const avg=vals.reduce((a,b)=>a+b,0)/vals.length; const g=gradeFromPct(avg);
+  const inputs = [...$i('m-marks-fields').querySelectorAll('input')];
+  const { earned, possible, errors } = validateMarksInputs(inputs);
+  const errEl = $i('m-marks-error');
+  if (errors.length) {
+    errEl.innerHTML = '<i class="fas fa-triangle-exclamation"></i> ' + errors.join('<br><i class="fas fa-triangle-exclamation"></i> ');
+    errEl.style.display = 'block';
+  } else {
+    errEl.style.display = 'none';
+  }
+  if (possible > 0 && !errors.length) {
+    const avg=(earned/possible)*100; const g=gradeFromPct(avg);
     const el=$i('m-marks-avg');
     el.textContent=avg.toFixed(1)+'% — Grade '+g.grade+' ('+g.label+')';
     el.style.color=scoreColorFromPct(avg);
@@ -2047,9 +2104,26 @@ window.updateMarksPreview = () => {
 };
 $i('saveMarksBtn').addEventListener('click',async()=>{
   const sid=$i('m-marksStuId').value;
-  const inputs=$i('m-marks-fields').querySelectorAll('input');
-  const scores={};
-  inputs.forEach(inp=>{const v=parseFloat(inp.value);if(!isNaN(v))scores[inp.dataset.col]=Math.min(parseFloat(inp.dataset.max),Math.max(0,v));});
+  const inputs=[...$i('m-marks-fields').querySelectorAll('input')];
+  const { errors } = validateMarksInputs(inputs);
+  if (errors.length) {
+    const errEl = $i('m-marks-error');
+    errEl.innerHTML = '<i class="fas fa-triangle-exclamation"></i> ' + errors.join('<br><i class="fas fa-triangle-exclamation"></i> ');
+    errEl.style.display = 'block';
+    toast('Fix the highlighted mark(s) before saving — a score cannot exceed the assessment\'s full marks','error',6000);
+    return;
+  }
+  // Merge into the student's existing scores rather than replacing the whole
+  // object — this form only renders inputs for the CURRENT term's assessment
+  // columns, so a bare overwrite would silently delete every other term's
+  // previously saved marks for this student.
+  const stuBefore = APP.allStudents.find(s=>s.id===sid);
+  const scores = { ...(stuBefore?.scores || {}) };
+  inputs.forEach(inp=>{
+    const raw = inp.value.trim();
+    if (raw === '') return; // left blank — not entered, don't touch any existing value
+    scores[scoreKey(inp.dataset.col,inp.dataset.term)] = parseFloat(raw); // 0 stored exactly like any other valid score
+  });
   setBtn('saveMarksBtn',true,'Saving…');
   try {
     await sbFetch(`students?id=eq.${sid}`,{method:'PATCH',body:JSON.stringify({scores})});
@@ -2106,7 +2180,7 @@ $i('saveColBtn').addEventListener('click',async()=>{
       let applied=0;
       for (const stu of APP.allStudents) {
         try {
-          const newScores={...(stu.scores||{}), [name]:batchMark};
+          const newScores={...(stu.scores||{}), [scoreKey(name,APP.currentTerm)]:batchMark};
           await sbFetch(`students?id=eq.${stu.id}`,{method:'PATCH',body:JSON.stringify({scores:newScores})});
           applied++;
         } catch {}
@@ -2134,15 +2208,46 @@ $i('manageColBtn').addEventListener('click',async()=>{
       </div>
       <button class="ib del" onclick="deleteCol('${col.id}','${escA(col.column_name)}')"><i class="fas fa-trash"></i></button>
     </div>`).join(''); }
+  const mCls = APP.classes.find(c=>c.id===APP.currentClassId);
+  $i('m-showTeacherAvgCol').checked = getShowTeacherAvg(mCls, APP.currentTerm);
   openModal('m-manageCol');
+});
+$i('m-showTeacherAvgCol').addEventListener('change', async () => {
+  if (!APP.currentClassId) return;
+  const term = APP.currentTerm;
+  const field = 'show_teacher_avg' + getTermSuffix(term);
+  const val = $i('m-showTeacherAvgCol').checked;
+  try {
+    await sbFetch(`classes?id=eq.${APP.currentClassId}`, { method: 'PATCH', body: JSON.stringify({ [field]: val }) });
+    const cls = APP.classes.find(c => c.id === APP.currentClassId);
+    if (cls) cls[field] = val;
+    const rptCb = $i('rpt-showTeacherAvg');
+    if (rptCb && $i('rpt-class') && $i('rpt-class').value === APP.currentClassId) rptCb.checked = val;
+    renderStudents();
+    toast(`Teacher Avg column ${val ? 'shown' : 'hidden'} for Term ${term}`, 'success');
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+    $i('m-showTeacherAvgCol').checked = !val;
+  }
 });
 window.deleteCol = (cid, cname) => {
   confirm2('Delete Column',`Delete column "${cname}" and all scores under it? This removes marks from all students for this term.`,async()=>{
     try {
+      const term = APP.currentTerm;
+      const scopedKey = scoreKey(cname, term);
+      // Only safe to also clear the legacy (un-namespaced) key if no OTHER
+      // term's column currently reuses this exact name — otherwise the plain
+      // key might actually belong to that other term's data, not this one.
+      const allColsForClass = await sbFetch(`assessment_columns?class_id=eq.${APP.currentClassId}`);
+      const nameUsedElsewhere = (allColsForClass||[]).some(c => c.id !== cid && c.column_name === cname);
       const stus=await sbFetch(`students?class_id=eq.${APP.currentClassId}`);
       for (const s of (stus||[])) {
-        if (s.scores && s.scores[cname]!=null) {
-          const newScores={...s.scores}; delete newScores[cname];
+        const hasScoped = s.scores && s.scores[scopedKey]!=null;
+        const hasLegacy = !nameUsedElsewhere && s.scores && s.scores[cname]!=null;
+        if (hasScoped || hasLegacy) {
+          const newScores={...s.scores};
+          delete newScores[scopedKey];
+          if (hasLegacy) delete newScores[cname];
           await sbFetch(`students?id=eq.${s.id}`,{method:'PATCH',body:JSON.stringify({scores:newScores})});
         }
       }
@@ -2175,7 +2280,7 @@ async function processImportRows(rows) {
   if (first.some(c=>['name','student','full name','students','no','#','num','sn','s/n','id'].includes(c)||c.includes('name'))) dataStart=1;
 
   const cols=APP.currentCols;
-  let imported=0, skipped=0, errors=0;
+  let imported=0, skipped=0, errors=0, capped=0;
   const existingNames=new Set(APP.allStudents.map(s=>s.full_name.toLowerCase().trim()));
 
   let colMapping={};
@@ -2212,7 +2317,11 @@ async function processImportRows(rows) {
           const raw=String(row[ci]||'').trim();
           if (raw!==''&&!isNaN(raw)) {
             const col=cols.find(c=>c.column_name===colName);
-            if (col) scores[colName]=Math.min(col.max_score,Math.max(0,parseFloat(raw)));
+            if (col) {
+              let v=parseFloat(raw);
+              if (v<0||v>col.max_score) { capped++; v=Math.min(col.max_score,Math.max(0,v)); }
+              scores[scoreKey(colName,col.term)]=v;
+            }
           }
         });
       } else {
@@ -2222,7 +2331,11 @@ async function processImportRows(rows) {
           if (v!==''&&!isNaN(v)&&parseFloat(v)>=0) numCells.push(parseFloat(v));
         }
         cols.forEach((col,idx)=>{
-          if (numCells[idx]!=null) scores[col.column_name]=Math.min(col.max_score,Math.max(0,numCells[idx]));
+          if (numCells[idx]!=null) {
+            let v=numCells[idx];
+            if (v>col.max_score) { capped++; v=Math.min(col.max_score,v); }
+            scores[scoreKey(col.column_name,col.term)]=v;
+          }
         });
       }
     }
@@ -2236,8 +2349,8 @@ async function processImportRows(rows) {
     } catch { errors++; }
   }
   await loadClassData(APP.currentClassId);
-  const msg=`Imported ${imported} students for Term ${APP.currentTerm}${skipped?` · ${skipped} duplicates skipped`:''}${errors?` · ${errors} failed`:''}`;
-  toast(msg, imported>0?'success':'warn',5000);
+  const msg=`Imported ${imported} students for Term ${APP.currentTerm}${skipped?` · ${skipped} duplicates skipped`:''}${errors?` · ${errors} failed`:''}${capped?` · ${capped} mark(s) exceeded a column's full marks (or were negative) and were capped — please review those students' scores`:''}`;
+  toast(msg, imported>0?(capped?'warn':'success'):'warn', capped?9000:5000);
   if (imported>0) createNotification(`${imported} students imported`,`${imported} students added to class for Term ${APP.currentTerm}.`,'success','classes');
 }
 
@@ -2246,17 +2359,18 @@ $i('exportBtn').addEventListener('click',()=>{
   if (!APP.dispStudents.length) { toast('No students to export','warn'); return; }
   const cls=APP.classes.find(c=>c.id===APP.currentClassId), cols=APP.currentCols;
   const term = APP.currentTerm;
-  let csv='#,Student Name,'+cols.map(c=>`"${c.column_name} /${c.max_score}"`).join(',')+',Teacher Avg,Avg %,Grade,Term\n';
+  const showTeacherAvg = getShowTeacherAvg(cls, term);
+  let csv='#,Student Name,'+cols.map(c=>`"${c.column_name} /${c.max_score}"`).join(',')+(showTeacherAvg?',Teacher Avg':'')+',Avg %,Grade,Term\n';
   const avgDenom = getTeacherAvgDenominator(cls, term);
   APP.dispStudents.forEach((s,i)=>{
-    const sc=s.scores||{}, vals=cols.map(c=>sc[c.column_name]!=null?sc[c.column_name]:'').join(',');
+    const sc=s.scores||{}, vals=cols.map(c=>{const r=readScore(sc,c.column_name,c.term);return r!=null?r:'';}).join(',');
     const avg=calcAvg(s,cols); const g=gradeFromPct(avg);
     let teacherAvgDisplay = '';
-    const numerator = getTeacherAvgNumerator(s, term);
-    if (avgDenom && numerator != null) {
+    if (avgDenom && avg != null) {
+      const numerator = avg * (avgDenom / 100);
       teacherAvgDisplay = `${numerator.toFixed(1)} / ${avgDenom}`;
     }
-    csv+=`${i+1},"${s.full_name}",${vals},"${teacherAvgDisplay}",${avg!=null?avg.toFixed(1):''},${g.grade},${term}\n`;
+    csv+=`${i+1},"${s.full_name}",${vals}${showTeacherAvg?`,"${teacherAvgDisplay}"`:''},${avg!=null?avg.toFixed(1):''},${g.grade},${term}\n`;
   });
   dlBlob(csv,'text/csv',`${(cls?.class_name||'class').replace(/\s+/g,'_')}_marks_term${term}.csv`);
   toast('Exported','success');
@@ -2353,7 +2467,10 @@ async function buildAnalytics(filterClassId) {
   }
 
   const pct=totalStu>0?Math.round(totalPass/totalStu*100):0;
-  const atRisk=totalStu-totalPass;
+  // "At Risk (<50%)" must only count students who actually scored below 50% —
+  // totalFail already excludes students with no marks entered (see the loop
+  // above), unlike totalStu-totalPass which would wrongly include them too.
+  const atRisk=totalFail;
   const topClass=clsInfo.filter(c=>c.avg!=null).sort((a,b)=>b.avg-a.avg)[0];
   const worstClass=clsInfo.filter(c=>c.avg!=null).sort((a,b)=>a.avg-b.avg)[0];
   $i('ana-summary-stats').innerHTML=`
@@ -2427,6 +2544,40 @@ async function buildAnalytics(filterClassId) {
     },options:{...baseChartOpts(),...{scales:{x:{stacked:true,ticks:{color:fontColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:fontColor,font:{size:10}},grid:{color:gridColor}}}}}});
   }
 
+  // Per-class breakdown table — every number here comes straight from clsInfo,
+  // the same source already used for the cards and charts above, so it can
+  // never disagree with them.
+  const tableRows = clsInfo.map(c => {
+    const failCount = c.hasMarks - c.passing;
+    const noMarkCount = c.total - c.hasMarks;
+    const barCol = c.avg != null ? scoreColorFromPct(c.avg) : 'var(--txt3)';
+    return `<tr>
+      <td style="font-weight:600">${esc(c.cls.class_name)}</td>
+      <td style="font-family:'JetBrains Mono',monospace">${c.total}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${barCol}">${c.avg != null ? c.avg.toFixed(1) + '%' : '—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--green)">${c.passing}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--red)">${failCount}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--txt3)">${noMarkCount}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">A:${c.grades.A} B:${c.grades.B} C:${c.grades.C} D:${c.grades.D} E:${c.grades.E}</td>
+    </tr>`;
+  }).join('');
+  $i('ana-table-wrap').innerHTML = clsInfo.length ? `
+    <div class="section-title" style="margin:18px 0 10px"><i class="fas fa-table" style="color:var(--acc);margin-right:7px"></i>Class Breakdown (Term ${term})</div>
+    <div style="overflow-x:auto">
+      <table class="perf-table" style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="text-align:left;padding:8px">Class</th>
+          <th style="text-align:left;padding:8px">Students</th>
+          <th style="text-align:left;padding:8px">Avg %</th>
+          <th style="text-align:left;padding:8px">Pass</th>
+          <th style="text-align:left;padding:8px">Fail</th>
+          <th style="text-align:left;padding:8px">No Marks</th>
+          <th style="text-align:left;padding:8px">Grades</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>` : '';
+
   const insights=[];
   if (topClass) insights.push({icon:'fa-crown',color:'var(--yellow)',text:`<strong>${esc(topClass.cls.class_name)}</strong> has the highest average at <strong>${topClass.avg.toFixed(1)}%</strong>`});
   if (worstClass && worstClass.cls.id !== topClass?.cls.id) insights.push({icon:'fa-arrow-trend-down',color:'var(--red)',text:`<strong>${esc(worstClass.cls.class_name)}</strong> has the lowest average at <strong>${worstClass.avg.toFixed(1)}%</strong> — consider targeted intervention`});
@@ -2461,8 +2612,9 @@ $i('runPredBtn').addEventListener('click',async()=>{
     const [stus,cols]=await Promise.all([sbFetch(`students?class_id=eq.${classId}`),loadColsFromDB(classId, term)]);
     if (!stus||!stus.length) { results.innerHTML=`<div class="empty"><i class="fas fa-users"></i><p>No students in this class for Term ${term}</p></div>`; return; }
     const withRisk=stus.map(s=>{
-      const avg=calcAvg(s,cols)||0;
-      const assessments=cols.map(c=>s.scores?.[c.column_name]!=null?(s.scores[c.column_name]/c.max_score*100):null).filter(v=>v!=null);
+      const rawAvg=calcAvg(s,cols); // null means no marks entered at all — distinct from a genuine 0
+      const avg=rawAvg??0;
+      const assessments=cols.map(c=>{const r=readScore(s.scores,c.column_name,c.term);return r!=null?(r/c.max_score*100):null;}).filter(v=>v!=null);
       let trend='stable',trendVal=0;
       if (assessments.length>=2) {
         const half=Math.floor(assessments.length/2);
@@ -2472,24 +2624,25 @@ $i('runPredBtn').addEventListener('click',async()=>{
         if (trendVal>=5) trend='improving'; else if (trendVal<=-5) trend='declining';
       }
       let risk='low',riskLabel='On Track',riskCls='risk-low';
-      if (avg<40) { risk='high'; riskLabel='High Risk'; riskCls='risk-high'; }
+      if (rawAvg==null) { risk='none'; riskLabel='No Marks Yet'; riskCls='risk-none'; }
+      else if (avg<40) { risk='high'; riskLabel='High Risk'; riskCls='risk-high'; }
       else if (avg<55||trendVal<-15) { risk='medium'; riskLabel='At Risk'; riskCls='risk-med'; }
-      try { sbFetch('predictions',{method:'POST',body:JSON.stringify({student_id:s.id,class_id:classId,teacher_id:APP.teacherId,term:term,academic_year:APP.classes.find(c=>c.id===classId)?.academic_year||'2025-2026',current_avg:+avg.toFixed(2),risk_level:risk,trend,prediction_data:{scores:s.scores,colCount:cols.length}})}); } catch {}
+      if (rawAvg!=null) { try { sbFetch('predictions',{method:'POST',body:JSON.stringify({student_id:s.id,class_id:classId,teacher_id:APP.teacherId,term:term,academic_year:APP.classes.find(c=>c.id===classId)?.academic_year||'2025-2026',current_avg:+avg.toFixed(2),risk_level:risk,trend,prediction_data:{scores:s.scores,colCount:cols.length}})}); } catch {} }
       return {...s,avg,trend,trendVal,riskLabel,riskCls,risk};
     }).sort((a,b)=>a.avg-b.avg);
-    const high=withRisk.filter(s=>s.risk==='high').length, med=withRisk.filter(s=>s.risk==='medium').length, low=withRisk.filter(s=>s.risk==='low').length;
+    const high=withRisk.filter(s=>s.risk==='high').length, med=withRisk.filter(s=>s.risk==='medium').length, low=withRisk.filter(s=>s.risk==='low').length, noData=withRisk.filter(s=>s.risk==='none').length;
     results.innerHTML=`
       <div class="stats-grid" style="margin-bottom:13px">
         <div class="stat-card"><div class="stat-icon ic-red"><i class="fas fa-circle-xmark"></i></div><div class="stat-label">High Risk</div><div class="stat-val c-red">${high}</div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,.12)"><i class="fas fa-triangle-exclamation" style="color:var(--yellow)"></i></div><div class="stat-label">At Risk</div><div class="stat-val" style="color:var(--yellow)">${med}</div></div>
         <div class="stat-card"><div class="stat-icon ic-green"><i class="fas fa-circle-check"></i></div><div class="stat-label">On Track</div><div class="stat-val c-green">${low}</div></div>
       </div>
-      <p style="color:var(--txt2);font-size:12.5px">Risk analysis for Term ${term}. ${withRisk.length} students analysed.</p>
+      <p style="color:var(--txt2);font-size:12.5px">Risk analysis for Term ${term}. ${withRisk.length} students analysed.${noData?` ${noData} student(s) have no marks entered yet and are excluded from the risk counts above.`:''}</p>
       <div style="margin-top:12px;max-height:300px;overflow:auto">
         ${withRisk.slice(0,20).map(s => `
           <div class="pred-item">
             <span style="font-weight:600">${esc(s.full_name)}</span>
-            <span style="font-family:'JetBrains Mono',monospace">${s.avg.toFixed(1)}%</span>
+            <span style="font-family:'JetBrains Mono',monospace">${s.risk==='none'?'—':s.avg.toFixed(1)+'%'}</span>
             <span class="risk-pill ${s.riskCls}">${s.riskLabel}</span>
           </div>
         `).join('')}
@@ -2521,7 +2674,15 @@ async function buildLeaderboard(classId) {
       if (stus) allStus.push(...stus.map(st=>({...st,_className:cls.class_name,_cols:cols})));
     }
     if (!allStus.length) { lb.innerHTML=`<div class="empty"><i class="fas fa-trophy"></i><p>No students to rank yet for Term ${term}</p></div>`; return; }
-    const ranked=allStus.map(s=>({...s,_avg:calcAvg(s,s._cols)||0})).sort((a,b)=>b._avg-a._avg).slice(0,30);
+    // Exclude students with no marks entered at all — showing them as "0%" would
+    // misrepresent them as having failed every assessment, when in fact they
+    // simply haven't been assessed yet.
+    const ranked=allStus
+      .map(s=>({...s,_avg:calcAvg(s,s._cols)}))
+      .filter(s=>s._avg!=null)
+      .sort((a,b)=>b._avg-a._avg)
+      .slice(0,30);
+    if (!ranked.length) { lb.innerHTML=`<div class="empty"><i class="fas fa-trophy"></i><p>No students with marks entered yet for Term ${term}</p></div>`; return; }
     const medals=['🥇','🥈','🥉'];
     lb.innerHTML=ranked.map((s,i)=>{
       const rCls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
@@ -2812,12 +2973,21 @@ async function populateRptClasses() {
     .join('');
   $i('rpt-class').innerHTML = options || '<option value="">No classes found</option>';
   $i('rpt-term').value = APP.currentTerm;
+  syncRptTeacherAvgCheckbox();
 }
+function syncRptTeacherAvgCheckbox() {
+  const cls = APP.classes.find(c => c.id === $i('rpt-class').value);
+  const term = parseInt($i('rpt-term').value) || APP.currentTerm;
+  $i('rpt-showTeacherAvg').checked = getShowTeacherAvg(cls, term);
+}
+$i('rpt-class').addEventListener('change', syncRptTeacherAvgCheckbox);
+$i('rpt-term').addEventListener('change', syncRptTeacherAvgCheckbox);
 
 $i('genRptBtn').addEventListener('click',async()=>{
   const classId = $i('rpt-class').value;
   const term = parseInt($i('rpt-term').value);
   const year = $i('rpt-year').value;
+  const showTeacherAvg = $i('rpt-showTeacherAvg').checked;
   
   if (!classId) { toast('Select a class','warn'); return; }
   
@@ -2835,7 +3005,7 @@ $i('genRptBtn').addEventListener('click',async()=>{
       loadColsFromDB(classId, term),
       computeTeacherOverallAverage(term).catch(() => ({ overall: null, totalStu: 0, best: null, classCount: null }))
     ]);
-    generateReport(cls, stus||[], cols, term, year, teacherOverview);
+    generateReport(cls, stus||[], cols, term, year, teacherOverview, showTeacherAvg);
     try {
       await sbFetch('reports', {
         method: 'POST',
@@ -2862,7 +3032,7 @@ $i('genRptBtn').addEventListener('click',async()=>{
   }
 });
 
-function generateReport(cls, students, cols, term, year, teacherOverview) {
+function generateReport(cls, students, cols, term, year, teacherOverview, showTeacherAvg = true) {
   const preview = $i('report-preview');
   const termLabel = term === 1 ? 'I' : term === 2 ? 'II' : 'III';
   
@@ -2895,12 +3065,13 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
   const classAvg = validAvgs.length ? validAvgs.reduce((a,b) => a+b, 0) / validAvgs.length : null;
   const totalPass = avgs.filter(v => v != null && v >= 50).length;
 
-  // ─── TEACHER AVERAGE DATA ───
+  // ─── TEACHER AVERAGE DATA (derived live from each student's current, correctly
+  // marks-weighted average — never stale, never depends on a manual "Apply to All" step) ───
   const avgDenom = getTeacherAvgDenominator(cls, term);
-  const teacherAvgNumerators = sorted
-    .map(s => getTeacherAvgNumerator(s, term))
-    .filter(v => v != null);
-  const teacherAvgClassAvg = teacherAvgNumerators.length
+  const teacherAvgNumerators = avgs
+    .filter(v => v != null)
+    .map(v => v * (avgDenom / 100));
+  const teacherAvgClassAvg = avgDenom && teacherAvgNumerators.length
     ? teacherAvgNumerators.reduce((a, b) => a + b, 0) / teacherAvgNumerators.length
     : null;
 
@@ -2912,7 +3083,7 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
   const bodyRows = sorted.map((s,i) => {
     const sc = s.scores || {};
     const colCells = cols.map(col => {
-      const raw = sc[col.column_name];
+      const raw = readScore(sc, col.column_name, col.term);
       const pct = raw != null ? (raw / col.max_score * 100) : null;
       return `<td style="text-align:center">${raw != null ? raw : ''}</td><td style="text-align:center">${pct != null ? pct.toFixed(1) + '%' : ''}</td>`;
     }).join('');
@@ -2922,29 +3093,30 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
     const bgStyle = avg != null && avg < 50 ? 'background:#fff5f5' : '';
     
     let teacherAvgDisplay = '—';
-    const numerator = getTeacherAvgNumerator(s, term);
-    if (avgDenom && numerator != null) {
+    if (avgDenom && avg != null) {
+      const numerator = avg * (avgDenom / 100);
       teacherAvgDisplay = `${numerator.toFixed(1)} / ${avgDenom}`;
     }
+    const teacherAvgCell = showTeacherAvg ? `<td style="text-align:center;font-weight:700;color:#FF6600">${teacherAvgDisplay}</td>` : '';
     
     return `<tr style="${bgStyle}">
       <td style="text-align:center;font-weight:600">${i+1}</td>
       <td style="text-align:left;font-weight:600;padding-left:6px">${esc(s.full_name)}${s.registration_number ? `<br><span style="font-size:8px;font-weight:400;color:#666">${esc(s.registration_number)}</span>` : ''}</td>
       ${colCells}
       <td style="text-align:center;font-weight:700;color:${scoreColorHex(avg)}">${avg != null ? avg.toFixed(1) + '%' : '—'}</td>
-      <td style="text-align:center;font-weight:700;color:#FF6600">${teacherAvgDisplay}</td>
+      ${teacherAvgCell}
       <td style="text-align:center;font-weight:700">${g.grade}</td>
       <td style="text-align:center;font-weight:700;color:${passColor}">${avg != null ? (avg >= 50 ? 'PASS' : 'FAIL') : '—'}</td>
     </tr>`;
   }).join('');
 
   const totalsColCells = cols.map(col => {
-    const vals = sorted.map(s => s.scores?.[col.column_name]).filter(v => v != null);
+    const vals = sorted.map(s => readScore(s.scores, col.column_name, col.term)).filter(v => v != null);
     const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
     return `<td style="text-align:center;font-weight:700;background:#f0f0f0">${avg != null ? avg.toFixed(1) : ''}</td><td style="background:#f0f0f0"></td>`;
   }).join('');
 
-  const totalColspan = 2 + cols.length * 2 + 4;
+  const totalColspan = 2 + cols.length * 2 + 3 + (showTeacherAvg ? 1 : 0);
 
   function scoreColorHex(pct) {
     if (pct == null) return '#333';
@@ -3010,7 +3182,7 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
           <th rowspan="2" style="text-align:left;min-width:130px">STUDENT'S NAMES</th>
           ${colHeaders}
           <th rowspan="2" style="background:#bbc">%</th>
-          <th rowspan="2" style="background:#bbc;min-width:70px">TEACHER<br>AVG</th>
+          ${showTeacherAvg ? '<th rowspan="2" style="background:#bbc;min-width:70px">TEACHER<br>AVG</th>' : ''}
           <th rowspan="2" style="background:#bbc">GRADE</th>
           <th rowspan="2" style="background:#bbc">REMARKS</th>
         </tr>
@@ -3024,7 +3196,7 @@ function generateReport(cls, students, cols, term, year, teacherOverview) {
           <td colspan="2" style="text-align:right;padding:5px 8px;font-weight:700">CLASS AVERAGE →</td>
           ${totalsColCells}
           <td style="text-align:center;font-weight:700;color:${scoreColorHex(classAvg)}">${classAvg != null ? classAvg.toFixed(1) + '%' : '—'}</td>
-          <td style="text-align:center;font-weight:700;color:#FF6600">${avgDenom && teacherAvgClassAvg != null ? `${teacherAvgClassAvg.toFixed(1)} / ${avgDenom}` : '—'}</td>
+          ${showTeacherAvg ? `<td style="text-align:center;font-weight:700;color:#FF6600">${avgDenom && teacherAvgClassAvg != null ? `${teacherAvgClassAvg.toFixed(1)} / ${avgDenom}` : '—'}</td>` : ''}
           <td style="text-align:center">${classAvg != null ? gradeFromPct(classAvg).grade : '—'}</td>
           <td></td>
         </tr>
@@ -3122,16 +3294,17 @@ $i('exportXlsBtn').addEventListener('click', async () => {
       ]);
       if (!stus || !stus.length) continue;
       const avgDenom = getTeacherAvgDenominator(cls, term);
-      const header = ['#', 'Student Name', 'Reg. Number', ...cols.map(c => `${c.column_name} /${c.max_score}`), 'Teacher Avg', 'Average %', 'Grade', 'Result', 'Term'];
+      const showTeacherAvg = getShowTeacherAvg(cls, term);
+      const header = ['#', 'Student Name', 'Reg. Number', ...cols.map(c => `${c.column_name} /${c.max_score}`), ...(showTeacherAvg ? ['Teacher Avg'] : []), 'Average %', 'Grade', 'Result', 'Term'];
       const rows = stus.map((s, i) => {
         const avg = calcAvg(s, cols);
         const g = gradeFromPct(avg);
         let teacherAvg = '';
-        const numerator = getTeacherAvgNumerator(s, term);
-        if (avgDenom && numerator != null) {
+        if (avgDenom && avg != null) {
+          const numerator = avg * (avgDenom / 100);
           teacherAvg = `${numerator.toFixed(1)} / ${avgDenom}`;
         }
-        return [i + 1, s.full_name, s.registration_number || '', ...cols.map(c => s.scores?.[c.column_name] ?? ''), teacherAvg, avg != null ? avg.toFixed(1) : '', g.grade, avg != null ? (avg >= 50 ? 'PASS' : 'FAIL') : '', term];
+        return [i + 1, s.full_name, s.registration_number || '', ...cols.map(c => readScore(s.scores, c.column_name, c.term) ?? ''), ...(showTeacherAvg ? [teacherAvg] : []), avg != null ? avg.toFixed(1) : '', g.grade, avg != null ? (avg >= 50 ? 'PASS' : 'FAIL') : '', term];
       });
       const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
       XLSX.utils.book_append_sheet(wb, ws, cls.class_name.slice(0, 31) + `_T${term}`);
@@ -3254,7 +3427,7 @@ $i('set-province')?.addEventListener('change', e => populateDistricts(e.target.v
 async function computeTeacherOverallAverage(term) {
   await loadClasses();
   let totalStu = 0, best = null;
-  const classAvgs = [];
+  let sumAllStudentAvgs = 0, countAllStudentAvgs = 0;
   for (const cls of APP.classes) {
     try {
       const [stus, cols] = await Promise.all([sbFetch(`students?class_id=eq.${cls.id}`), loadColsFromDB(cls.id, term)]);
@@ -3262,13 +3435,16 @@ async function computeTeacherOverallAverage(term) {
       const avgs = s.map(st => calcAvg(st, cols)).filter(v => v != null);
       const avg = avgs.length ? avgs.reduce((a,b)=>a+b,0)/avgs.length : null;
       totalStu += s.length;
+      // Weight the overall average by student count, not by class count — a
+      // 44-student class and a 5-student class should not count equally.
+      sumAllStudentAvgs += avgs.reduce((a,b)=>a+b,0);
+      countAllStudentAvgs += avgs.length;
       if (avg != null) {
-        classAvgs.push(avg);
         if (!best || avg > best.avg) best = { name: cls.class_name, avg };
       }
     } catch {}
   }
-  const overall = classAvgs.length ? classAvgs.reduce((a,b)=>a+b,0)/classAvgs.length : null;
+  const overall = countAllStudentAvgs ? sumAllStudentAvgs / countAllStudentAvgs : null;
   return { overall, totalStu, best, classCount: APP.classes.length };
 }
 
@@ -3386,7 +3562,7 @@ $i('saveAllMarksBtn').addEventListener('click', async () => {
   let applied = 0, errors = 0;
   for (const stu of APP.allStudents) {
     try {
-      const newScores = { ...(stu.scores || {}), [colName]: score };
+      const newScores = { ...(stu.scores || {}), [scoreKey(colName, col.term)]: score };
       await sbFetch(`students?id=eq.${stu.id}`, { method: 'PATCH', body: JSON.stringify({ scores: newScores }) });
       stu.scores = newScores;
       applied++;
