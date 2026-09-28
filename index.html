@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SmartClass Analytics — Teacher Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,7 +31,10 @@
   --txt:#111111;--txt2:#444444;--txt3:#999999;
   --shadow:0 4px 24px rgba(0,0,0,.08);--shadow-lg:0 12px 48px rgba(0,0,0,.14);
 }
-html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.6;overflow-x:hidden}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.6;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent}
+button,select,.nav-item,.tool-btn,.btn,.btn-sec,.icon-btn,.ib,.pg-btn,.class-card,.qa-card,.backup-card{touch-action:manipulation}
+img,canvas,svg{max-width:100%}
 a{text-decoration:none;color:inherit}
 /* AMBIENT BACKGROUND — premium mesh + grid, sits behind everything */
 .bg-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -48,7 +56,7 @@ input,select,button,textarea{font-family:inherit}
 ::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px}
 .mono{font-family:'JetBrains Mono',monospace}
 /* LAYOUT */
-.app{display:flex;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden}
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:200;overflow-y:auto;flex-shrink:0}
 .sidebar-head{padding:18px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -73,6 +81,8 @@ input,select,button,textarea{font-family:inherit}
 .teach-info .role{font-size:10.5px;color:var(--txt3)}
 .logout-btn{width:100%;padding:7px 12px;border:1px solid var(--border);background:transparent;border-radius:var(--r-md);color:var(--txt2);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:var(--tr)}
 .logout-btn:hover{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red)}
+.sb-refresh{display:none;margin-bottom:8px}
+.sb-backdrop{display:none}
 /* MAIN */
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
 .top-bar{position:sticky;top:0;z-index:50;background:rgba(10,10,10,0.8);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;gap:12px}
@@ -95,6 +105,7 @@ input,select,button,textarea{font-family:inherit}
 .icon-btn:hover{background:var(--bg-hover);color:var(--txt);border-color:var(--border-hi)}
 .notif-badge{position:absolute;top:-4px;right:-4px;background:var(--acc);color:#fff;font-size:9px;font-weight:700;border-radius:10px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--bg-card)}
 /* NOTIFICATIONS DROPDOWN */
+.notif-wrap{position:relative}
 .notif-panel{position:absolute;top:46px;right:0;width:320px;background:var(--bg-card);border:1px solid var(--border-hi);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:500;display:none;overflow:hidden}
 .notif-panel.open{display:block;animation:mIn .15s ease}
 .notif-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -403,29 +414,154 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
 .rpt-grading{font-size:9px;text-align:center;border-top:1px solid #ccc;padding-top:5px;margin-top:6px}
 .rpt-footer{font-size:8.5px;text-align:center;padding-top:5px;color:#555;border-top:1px solid #ddd;margin-top:6px}
 /* PLANNER */
-.plan-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-/* RESPONSIVE */
-@media(max-width:768px){
-  .sidebar{position:fixed;top:0;left:0;height:100vh;transform:translateX(-100%);box-shadow:var(--shadow-lg)}
-  .sidebar.open{transform:translateX(0)}
-  .close-sb{display:flex}
-  .menu-btn{display:flex}
-  .page{padding:14px}
-  .top-bar{padding:10px 14px}
-  .form-row{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:1fr 1fr}
-  .qa-grid{grid-template-columns:1fr 1fr}
-  .report-options{grid-template-columns:1fr}
-  .classes-grid{grid-template-columns:1fr}
-  .charts-grid{grid-template-columns:1fr}
-  .conn-indicator span{display:none}
+.plan-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+/* RESPONSIVE — phones, small tablets, landscape phones */
+@media(hover:none){
+  .btn:hover,.stat-card:hover,.class-card:hover,.qa-card:hover,.backup-card:hover,.mini-stat:hover,.login-btn:hover{transform:none}
 }
+@media(max-width:768px),(max-height:500px) and (orientation:landscape){
+  /* Sidebar becomes a slide-in drawer with a tap-to-close backdrop */
+  .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:min(84vw,300px);min-width:0;transform:translateX(-100%);box-shadow:var(--shadow-lg);padding-top:env(safe-area-inset-top)}
+  .sidebar-foot{position:sticky;bottom:0;z-index:2;background:var(--bg-card);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar.open + .sb-backdrop{display:block}
+  .sb-backdrop{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  .close-sb{display:flex;width:36px;height:36px}
+  .menu-btn{display:flex;width:38px;height:38px;flex-shrink:0}
+  .nav-item{padding:11px 12px;font-size:13.5px}
+  .nav-item i{font-size:13px}
+
+  /* Top bar: never overflows — title shrinks/truncates, actions stay visible */
+  .top-bar{padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));gap:8px;flex-wrap:nowrap}
+  .breadcrumb{flex:1;min-width:0}
+  .breadcrumb-home,.breadcrumb-sep{display:none}
+  .breadcrumb-cur{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .top-bar-right{gap:6px;flex-shrink:0;margin-left:0}
+  .top-bar-right label{display:none}
+  .conn-indicator{padding:6px 8px}
+  .conn-indicator span{display:none}
+  .icon-btn{width:38px;height:38px}
+
+  /* Notifications dropdown anchored to the top bar, always inside the screen */
+  .notif-wrap{position:static}
+  .notif-panel{position:absolute;top:calc(100% + 6px);left:10px;right:10px;width:auto;max-width:none}
+  .notif-list{max-height:60vh;max-height:60dvh}
+
+  /* Content */
+  .page{padding:14px 12px calc(22px + env(safe-area-inset-bottom));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));gap:14px;min-width:0}
+  .card,.tbl-wrap,.chart-card,.settings-section{min-width:0}
+  .section-head{align-items:flex-start}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-card{padding:13px 14px}
+  .stat-val{font-size:24px}
+  .qa-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+  .report-options{grid-template-columns:1fr}
+  .classes-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .charts-grid{grid-template-columns:1fr}
+  .chart-card{padding:14px}
+  .toolbar{padding:8px;gap:6px}
+  .toolbar > div[style*="width:1px"]{display:none}
+  .toolbar > div[style*="margin-right"]{width:100%}
+  .tool-btn{padding:9px 12px;min-height:38px}
+  .btn,.btn-sec{min-height:38px}
+  .tbl-top{padding:10px 12px}
+  .tbl-top > div{min-width:0}
+  .tbl-top > div:last-child{width:100%}
+  .search-wrap{max-width:none;flex:1 1 100%}
+  .search-inp{padding:10px 12px 10px 32px}
+  .search-wrap i{left:11px}
+  .tbl-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  table.main-tbl{min-width:0}
+  table.main-tbl thead th{padding:9px 10px}
+  table.main-tbl tbody td{padding:10px}
+  .ib{width:36px;height:36px;font-size:13px}
+  .row-actions{gap:4px}
+  .status-pill,#stu-tbl .score,.risk-pill,.cc-avg{white-space:nowrap}
+  .top-bar{background:rgba(10,10,10,.95)}
+  [data-theme="light"] .top-bar{background:rgba(255,255,255,.97)}
+  .pagination{flex-wrap:wrap;gap:6px}
+  .pg-btn{min-width:36px;min-height:36px;padding:6px 10px}
+  .perf-table{min-width:560px}
+  .perf-table th,.perf-table td{padding:10px;white-space:nowrap}
+  .pred-item{flex-wrap:wrap;gap:6px 12px}
+  .lb-row{padding:11px 12px}
+  .tt-grid{min-width:600px}
+  .settings-section{padding:16px}
+  .settings-hero{padding:16px}
+  .settings-hero-top{flex-wrap:wrap}
+  .setting-row{gap:12px}
+  .mini-stat .ms-val{font-size:20px}
+  #m-marks-fields{grid-template-columns:repeat(auto-fill,minmax(125px,1fr)) !important}
+
+  /* Prevent iOS from zooming in when a field is focused (needs >=16px) */
+  input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px !important}
+  .fg input:not([type=checkbox]):not([type=radio]),.fg select,.fg textarea,.login-inp,.opt-grp select,.opt-grp input:not([type=checkbox]):not([type=radio]){min-height:44px}
+
+  /* Toasts + offline banner respect notches and span the width */
+  #toast-area{left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));align-items:stretch}
+  .toast{width:100%}
+  .offline-banner{padding-top:calc(10px + env(safe-area-inset-top))}
+
+  /* Official report + wide preview: scroll sideways instead of clipping */
+  #report-preview{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #report-preview::before{content:"\21C4  Swipe sideways to view the full report";display:block;position:sticky;left:0;width:100%;padding:7px 12px;font:600 11px 'Inter',sans-serif;color:#555;background:#f3f3f3;border-bottom:1px solid #ddd}
+  .rpt-paper{min-width:760px}
+  .plan-wrap .main-tbl{min-width:640px}
+}
+@media(max-width:600px){
+  /* Modals become bottom sheets on phones */
+  .modal{align-items:flex-end;padding:0}
+  .modal-box,.modal-box.wide,.modal-box.sm{max-width:100%;width:100%;border-radius:20px 20px 0 0;max-height:92vh;max-height:92dvh;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:sheetUp .24s ease}
+  .modal-head{margin-bottom:14px}
+  .modal-close{width:36px;height:36px;font-size:20px}
+  .modal-foot{position:sticky;bottom:0;z-index:1;background:var(--bg-card);padding-top:10px;padding-bottom:env(safe-area-inset-bottom)}
+  .modal-foot .btn,.modal-foot .btn-sec{justify-content:center;min-height:44px}
+  .login-box{padding:28px 20px}
+  #login-page{padding:14px;min-height:100vh;min-height:100dvh}
+  .login-btn{padding:14px}
+  /* Student table: hide row-number + avatar, keep the name pinned while scrolling scores */
+  #stu-tbl thead th:first-child,#stu-tbl tbody td:first-child{display:none}
+  #stu-tbl .stu-av{display:none}
+  #stu-tbl thead th:nth-child(2),#stu-tbl tbody td:nth-child(2){position:sticky;left:0;z-index:2;background:var(--bg-card);box-shadow:1px 0 0 var(--border);min-width:124px;max-width:150px}
+  #stu-tbl thead th:nth-child(2){background:var(--bg-sec);z-index:3}
+  #stu-tbl tbody tr:hover td:nth-child(2){background:var(--bg-hover)}
+  .stat-val{font-size:22px}
+  .stat-label{font-size:10px}
+  .section-title{font-size:14px}
+  .qa-grid{gap:8px}
+  .qa-card{padding:13px 8px}
+  .backup-grid{grid-template-columns:1fr}
+  .group-cards{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .conn-indicator{display:none}
+}
+@media(max-width:430px){
+  #refreshBtn{display:none}
+  .logout-btn.sb-refresh{display:flex}
+  #globalTermSelector{padding:6px 4px !important;width:80px}
+}
+@media(max-width:400px){
+  .classes-grid{grid-template-columns:1fr}
+  .stats-grid{gap:8px}
+  .stat-card{padding:11px 12px}
+  .stat-val{font-size:20px}
+  .icon-btn,.menu-btn{width:36px;height:36px}
+  .top-bar{gap:6px}
+  .top-bar-right{gap:5px}
+  .page{padding-left:10px;padding-right:10px}
+  .mini-stat-grid{grid-template-columns:1fr 1fr;gap:8px}
+}
+@keyframes sheetUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
 @media print{
   .sidebar,.top-bar,.toolbar,.btn,.btn-sec,.tool-btn,#toast-area,.modal,.tbl-top,.pagination,.page:not(#page-reports),#report-options-bar,.offline-banner,.bg-mesh{display:none!important}
   #page-reports{padding:0!important;display:block!important}
   #report-preview{display:block!important;margin:0;border-radius:0;box-shadow:none}
   body{background:#fff}
-  .rpt-paper{padding:10mm 12mm;font-size:10.5pt}
+  .rpt-paper{padding:10mm 12mm;font-size:10.5pt;min-width:0!important}
+  #report-preview{overflow:visible!important}
+  #report-preview::before{display:none!important}
 }
 </style>
 </head>
@@ -559,9 +695,11 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
           <p class="role" id="sbEmail">teacher@school.rw</p>
         </div>
       </div>
+      <button class="logout-btn sb-refresh" id="sbRefreshBtn"><i class="fas fa-rotate-right"></i><span>Refresh data</span></button>
       <button class="logout-btn" id="logoutBtn"><i class="fas fa-arrow-right-from-bracket"></i><span>Sign Out</span></button>
     </div>
   </aside>
+  <div class="sb-backdrop" id="sbBackdrop"></div>
 
   <!-- MAIN -->
   <main class="main">
@@ -585,7 +723,7 @@ table.main-tbl tbody tr:hover{background:var(--bg-hover)}
           <div class="conn-dot" id="connDot"></div>
           <span id="conn-label">Connecting…</span>
         </div>
-        <div style="position:relative">
+        <div class="notif-wrap">
           <button class="icon-btn" id="notifBtn" title="Notifications">
             <i class="fas fa-bell"></i>
             <span class="notif-badge" id="notifBadge" style="display:none">0</span>
@@ -1403,6 +1541,9 @@ const PAGE_META = {
   timetable:{title:'Timetable'}, reports:{title:'Reports'}, compete:{title:'Leaderboard'},
   backup:{title:'Backup & Restore'}, settings:{title:'Settings'}, help:{title:'Help'}
 };
+// True on phones, small tablets and landscape phones (where the sidebar is a drawer)
+const MOBILE_MQ = window.matchMedia('(max-width:768px), (max-height:500px) and (orientation:landscape)');
+function isMobileLayout() { return MOBILE_MQ.matches; }
 function goPage(pg) {
   APP.page = pg;
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -1410,7 +1551,8 @@ function goPage(pg) {
   if (el) { el.classList.remove('hidden'); el.style.display='flex'; el.style.flexDirection='column'; el.style.gap='18px'; }
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page===pg));
   $i('pageTitle').textContent = PAGE_META[pg]?.title || pg;
-  if (window.innerWidth <= 768) $i('sidebar').classList.remove('open');
+  if (isMobileLayout()) $i('sidebar').classList.remove('open');
+  document.querySelector('.main')?.scrollTo({top:0});
   ({dashboard:renderDashboard,classes:renderClasses,analytics:renderAnalytics,predict:renderPredict,
     compete:renderCompete,groups:renderGroups,reports:populateRptClasses,planner:renderPlanner,
     timetable:renderTimetable,settings:loadSettings,help:renderHelp,
@@ -1419,7 +1561,12 @@ function goPage(pg) {
 document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => goPage(n.dataset.page)));
 $i('menuBtn').addEventListener('click', () => $i('sidebar').classList.toggle('open'));
 $i('closeSb').addEventListener('click', () => $i('sidebar').classList.remove('open'));
+$i('sbBackdrop').addEventListener('click', () => $i('sidebar').classList.remove('open'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $i('sidebar').classList.remove('open'); });
+// If the screen grows (rotate / resize) back to desktop layout, make sure the drawer state is reset
+(MOBILE_MQ.addEventListener ? MOBILE_MQ.addEventListener('change', e => { if (!e.matches) $i('sidebar').classList.remove('open'); }) : MOBILE_MQ.addListener(e => { if (!e.matches) $i('sidebar').classList.remove('open'); }));
 $i('refreshBtn').addEventListener('click', () => { goPage(APP.page); toast('Refreshed','success'); });
+$i('sbRefreshBtn').addEventListener('click', () => { $i('sidebar').classList.remove('open'); goPage(APP.page); toast('Refreshed','success'); });
 window.goPage = goPage;
 
 /* ═══════════════════════════════════════════════════════
